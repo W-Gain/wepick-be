@@ -6,16 +6,16 @@
 
 아래 구현 설명은 기존 구현에 관한 기록이며 최신 제품 요구사항을 대신하지 않습니다. 현재 동작은 코드·검증 결과로 확인하고, 목표와의 차이는 [Product 전환 작업](https://github.com/W-Gain/wepick-product/blob/main/docs/plans/documentation-backlog.md)에 연결합니다.
 
-Wepick의 투표·커뮤니티·세션 인증 API입니다. 현재 운영 목표는 단일 Docker host에서 frontend, backend, MySQL, Caddy를 함께 실행하는 구조입니다.
+Wepick의 투표·커뮤니티·세션 인증 API입니다. 현재 운영 배포 환경은 없습니다. 목표 런타임은 단일 Docker host에서 frontend, backend, MySQL, Caddy를 함께 실행하는 구조이며, 배포 방식은 Product 전환 계획 8단계에서 정합니다.
 
-## Current runtime model
+## Target runtime model
 
 ```text
 Browser
   └─ Caddy
       ├─ /api/*     → Spring Boot backend
       ├─ /uploads/* → local upload volume (read-only)
-      └─ /*         → Express frontend
+      └─ /*         → frontend static files (Vite dist)
 
 Backend
   ├─ MySQL (application data + JDBC session)
@@ -49,25 +49,23 @@ Backend validates file size, declared content type, and file signature. The curr
 
 ## Runtime environment variables
 
-Spring Boot reads standard environment variables. Docker Compose injects the database values in production.
+Spring Boot reads standard environment variables. 모든 값에 로컬 개발용 기본값이 있으며, 운영에서 반드시 지정할 값은 아래 **필수** 항목입니다.
 
-```env
-SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/wepick
-SPRING_DATASOURCE_USERNAME=wepick
-SPRING_DATASOURCE_PASSWORD=replace-with-real-secret
+| 변수 | 구분 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| `SPRING_DATASOURCE_URL` | 필수 | `jdbc:mysql://localhost:3306/wepick-be` | MySQL 접속 URL |
+| `SPRING_DATASOURCE_USERNAME` | 필수 | `root` | DB 사용자 |
+| `SPRING_DATASOURCE_PASSWORD` | 필수 | `root` | DB 비밀번호 |
+| `SESSION_COOKIE_SECURE` | 필수 (운영) | `false` | HTTPS 운영에서는 `true` |
+| `CORS_ALLOWED_ORIGINS` | 선택 | `http://localhost:3000` | 브라우저가 `/api`를 같은 출처로 호출하면 영향 없음 |
+| `SESSION_COOKIE_SAME_SITE` | 선택 | `lax` | 같은 출처 구조에서는 기본값 사용 |
+| `IMAGE_STORAGE_LOCAL_ROOT` | 선택 | `/data/uploads` | 업로드 저장 경로 |
+| `IMAGE_PUBLIC_PREFIX` | 선택 | `/uploads` | 업로드 공개 URL 접두사 |
+| `APP_IMAGE_MAX_FILE_SIZE` | 선택 | `5MB` | multipart 파일당 최대 크기 |
+| `APP_IMAGE_MAX_REQUEST_SIZE` | 선택 | `25MB` | multipart 요청당 최대 크기 |
+| `APP_IMAGE_MAX_FILE_SIZE_BYTES` | 선택 | `5242880` | 이미지 검증용 파일당 최대 바이트. `APP_IMAGE_MAX_FILE_SIZE`와 같은 값을 유지 |
 
-SESSION_COOKIE_SECURE=true
-SESSION_COOKIE_SAME_SITE=lax
-CORS_ALLOWED_ORIGINS=https://wepick.example.com
-
-IMAGE_STORAGE_LOCAL_ROOT=/data/uploads
-IMAGE_PUBLIC_PREFIX=/uploads
-APP_IMAGE_MAX_FILE_SIZE=5MB
-APP_IMAGE_MAX_REQUEST_SIZE=25MB
-APP_IMAGE_MAX_FILE_SIZE_BYTES=5242880
-```
-
-Do not commit production secrets. The host runtime file is managed by `wepick-infra` at `/etc/wepick/prod.env`.
+비밀값은 커밋하지 않습니다. 운영 값의 이름과 예시는 `wepick-infra`의 `environments/prod/.env.example`이 관리합니다.
 
 ## Local verification
 
@@ -78,13 +76,11 @@ docker build -t wepick-be:local -f dockerfile .
 
 A MySQL-backed smoke environment must verify health, login, image upload, image delivery through Caddy, and post creation with uploaded image IDs.
 
-## Deployment ownership
+## Delivery
 
-- `wepick-be`: tests and immutable application image production
-- `wepick-fe`: tests and immutable application image production
-- `wepick-infra`: Compose, Caddy, runtime environment contract, host deployment and rollback
-
-Existing AWS Terraform and deployment documents are legacy reference material only. They are not required to run the current backend image.
+- CI: Pull Request와 `main` push에서 GitHub Actions가 `./gradlew test`를 실행합니다.
+- 이미지 발행과 배포 파이프라인은 없습니다. 2026-10-07에 GHCR 발행과 기존 AWS 배포 워크플로를 제거했고, 배포 방식은 Product 전환 계획 8단계에서 다시 정합니다.
+- `wepick-infra`는 목표 런타임 구성(Compose, Caddy, 환경 계약)을 관리합니다.
 
 ## Tech stack
 
@@ -96,7 +92,7 @@ Existing AWS Terraform and deployment documents are legacy reference material on
 | Session | spring-session-jdbc |
 | Image storage | Local Docker volume via `ImageStorage` |
 | Container | Docker |
-| CI/CD target | GitHub Actions + GHCR + host Compose |
+| CI | GitHub Actions (test only) |
 
 ## 문서
 
