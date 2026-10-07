@@ -2,9 +2,9 @@
 
 ## 저장소 역할과 제품 설계
 
-이 저장소는 **서버·데이터·상세 API**를 관리합니다. 제품·정책·ERD·화면 정의서·와이어프레임·공통 API 설계의 기준은 [wepick-product](https://github.com/W-Gain/wepick-product)입니다. [문서 관리 규칙](https://github.com/W-Gain/wepick-product/blob/main/docs/working/repository-and-document-guide.md)을 따르며 설계 원본을 복사하지 않습니다.
+이 저장소는 **서버·데이터·상세 API**를 관리합니다. 제품·정책·ERD·화면 정의서·와이어프레임·공통 API 설계의 기준은 [wepick-product](https://github.com/W-Gain/wepick-product)입니다. [문서 관리 규칙](https://github.com/W-Gain/wepick-product/blob/main/docs/guides/repository-and-document-guide.md)을 따르며 설계 원본을 복사하지 않습니다.
 
-아래 구현 설명은 기존 구현에 관한 기록이며 최신 제품 요구사항을 대신하지 않습니다. 현재 동작은 코드·검증 결과로 확인하고, 목표와의 차이는 [Product 전환 작업](https://github.com/W-Gain/wepick-product/blob/main/docs/working/documentation-backlog.md)에 연결합니다.
+아래 구현 설명은 기존 구현에 관한 기록이며 최신 제품 요구사항을 대신하지 않습니다. 현재 동작은 코드·검증 결과로 확인하고, 목표와의 차이는 [Product 전환 작업](https://github.com/W-Gain/wepick-product/blob/main/docs/plans/documentation-backlog.md)에 연결합니다.
 
 Wepick의 투표·커뮤니티·세션 인증 API입니다. 현재 운영 목표는 단일 Docker host에서 frontend, backend, MySQL, Caddy를 함께 실행하는 구조입니다.
 
