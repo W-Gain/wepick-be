@@ -7,11 +7,15 @@
 
 이 문서의 “현재”는 위 분석일·커밋 시점을 뜻합니다. 이후 API 변경은 이 기록에 덮어쓰지 않고 새 날짜의 분석 또는 현행 OpenAPI에 반영합니다. 분석 오류 정정 시 정정일·근거를 남깁니다.
 
+[요청·응답 상세 API 명세서](2026-09-07/README.md)
+
+2026-09-11 정정: `ErrorResponse.reason`에 맞춰 공통 오류 필드명을 수정했습니다.
+
 ## 경로와 공통 처리
 
 표의 경로는 **BE 내부 경로**입니다. 운영 Caddy를 통해 호출할 때 `/api`를 앞에 붙입니다. `/api/topics/today` → BE `/topics/today`. `/health`(FE), `/api/health`(BE), `/api/actuator/health`(Actuator)는 서로 구분합니다.
 
-일반 성공 응답은 `{message,data,error:null}`, 명시적 204 응답은 본문이 없습니다. ErrorException 응답은 `{message:"오류코드",data:null,error:{message:"설명"}}`입니다. 기존 topic_api.md의 일부 오류 예제와 다릅니다. Framework 기본 오류까지 모두 같은 형식이라고 가정하지 않습니다.
+일반 성공 응답은 `{message,data,error:null}`, 명시적 204 응답은 본문이 없습니다. ErrorException 응답은 `{message:"오류코드",data:null,error:{reason:"설명"}}`입니다. 기존 topic_api.md의 일부 오류 예제와 다릅니다. Framework 기본 오류까지 모두 같은 형식이라고 가정하지 않습니다.
 
 `로그인`은 SessionAuthFilter가 채운 userId와 AuthInterceptor의 `@Auth` 검사입니다. `선택`은 로그인 없이 조회 가능하지만 userId가 있으면 응답을 개인화합니다. `공개`는 해당 Controller의 로그인 요구가 없다는 뜻이며 공개 범위가 바람직하다는 승인 의미는 아닙니다.
 
