@@ -1,6 +1,6 @@
 # Topic (양자택일 투표) 기능 기획서
 
-> **Superseded (2026-10-07):** 제품 방향 전환 이전의 기획입니다. "회원 전용, 당일만 투표" 등 현재 Accepted 정책과 다른 내용이 있어 구현 기준으로 사용하지 않습니다. 현재 기준은 [익명 투표·로그인 전환·어뷰징 정책](https://github.com/W-Gain/wepick-product/blob/main/docs/policies/anonymous-voting-login-and-abuse.md), [오늘의 Pick과 지난 Pick 운영 정책](https://github.com/W-Gain/wepick-product/blob/main/docs/policies/daily-pick-and-archive.md), [핵심 사용자 흐름과 MVP 범위](https://github.com/W-Gain/wepick-product/blob/main/docs/design/core-user-flows-and-mvp-scope.md)입니다.
+> **Superseded (2026-10-07):** 제품 방향 전환 이전의 기획입니다. "회원 전용, 당일만 투표" 등 현재 Accepted 정책과 다른 내용이 있어 구현 기준으로 사용하지 않습니다. 현재 기준은 [익명 투표·로그인 전환·어뷰징 정책](https://github.com/W-Gain/wepick-product/blob/main/docs/policies/anonymous-voting-login-and-abuse.md), [오늘의 Pick과 지난 Pick 운영 정책](https://github.com/W-Gain/wepick-product/blob/main/docs/policies/daily-pick-and-archive.md), [핵심 사용자 흐름과 MVP 범위](https://github.com/W-Gain/wepick-product/blob/main/docs/product/core-user-flows-and-mvp-scope.md)입니다.
 
 ## 1. 개요
 WePick (Topic)은 **하루 1번 A/B 투표**를 중심으로 운영되는 서비스이며, 사용자는 매일 새로운 주제에 대해 투표하고 결과를 확인할 수 있습니다.

@@ -1,6 +1,6 @@
 # Topic API 명세서
 
-> 기존 구현 참고 문서 — 최신 제품 요구사항과 차이가 있습니다 (2026-09-07 확인). 아래 로그인 필수·당일만 투표 가능 규칙은 [Product의 익명 투표·지난 Pick 참여 흐름](https://github.com/W-Gain/wepick-product/blob/main/docs/design/core-user-flows-and-mvp-scope.md)과 다릅니다. 후속 전환 설계에서 실제 코드와 대조해야 하며, 이 문서를 목표 정책으로 사용하지 않습니다. 이번 이전에서는 아래 요청·응답과 API 구현을 변경하지 않았습니다.
+> 기존 구현 참고 문서 — 최신 제품 요구사항과 차이가 있습니다 (2026-09-07 확인). 아래 로그인 필수·당일만 투표 가능 규칙은 [Product의 익명 투표·지난 Pick 참여 흐름](https://github.com/W-Gain/wepick-product/blob/main/docs/product/core-user-flows-and-mvp-scope.md)과 다릅니다. 후속 전환 설계에서 실제 코드와 대조해야 하며, 이 문서를 목표 정책으로 사용하지 않습니다. 이번 이전에서는 아래 요청·응답과 API 구현을 변경하지 않았습니다.
 
 이 문서는 프론트엔드 연동을 위한 Topic(양자택일 투표) 도메인의 API 사용법을 설명합니다.
 
