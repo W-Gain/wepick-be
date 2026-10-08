@@ -103,6 +103,20 @@ Flyway가 애플리케이션 테이블과 Spring Session JDBC 테이블을 함�
 
 기존 Hibernate 관리 DB에는 이 V1을 바로 실행하지 않습니다. `baseline-on-migrate`는 기본값 `false`이며, 이 작업은 빈 DB 경로를 검증합니다. 기존 DB 전환은 백업과 V1 대비 스키마 일치 확인 후 명시적인 Flyway baseline(version 1) 절차를 별도로 수행해야 합니다. 기존 개발 볼륨을 삭제하는 것으로 데이터 전환을 대신하지 않습니다.
 
+### V3 사전 점검
+
+기존 DB에 V3를 적용하기 전에 대상 DB에 대해 읽기 전용 점검을 실행합니다.
+
+```bash
+mysql --host=YOUR_HOST --user=YOUR_USER --password YOUR_DATABASE < scripts/v3-preflight.sql
+```
+
+`YOUR_HOST`, `YOUR_USER`, `YOUR_DATABASE`는 대상 DB 접속 정보로 바꿉니다.
+
+두 조회 결과가 모두 0건인지 확인한 뒤 적용합니다. 이 점검은 같은 비NULL 토픽 안의 중복 선택지 라벨과, 존재하지 않거나 토픽이 지정되지 않았거나 다른 토픽에 속한 선택지를 가리키는 표를 찾습니다. 토픽이 지정되지 않은 미참조 선택지와 저장된 `vote_count`와 실제 표 수의 차이는 수정하지 않으며 자동 보정하지 않습니다.
+
+마이그레이션에 실패하면 임의로 다시 실행하지 말고 현재 스키마의 부분 적용 객체와 `flyway_schema_history`를 확인합니다. 복구 방법을 결정하기 전에 Flyway `repair`를 실행하지 않습니다.
+
 A MySQL-backed smoke environment must verify health, login, image upload, image delivery through Caddy, and post creation with uploaded image IDs.
 
 ## Delivery

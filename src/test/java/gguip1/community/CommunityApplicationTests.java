@@ -47,12 +47,15 @@ class CommunityApplicationTests {
     void emptyDatabaseMigratesOnceAndHibernateValidates() {
         assertThat(environment.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
         assertThat(environment.getProperty("spring.session.jdbc.initialize-schema")).isEqualTo("never");
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '1' AND success = 1",
                 Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '2' AND success = 1",
+                Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '3' AND success = 1",
                 Integer.class)).isEqualTo(1);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForList(
@@ -61,6 +64,8 @@ class CommunityApplicationTests {
                 "images", "users", "posts", "post_comments", "post_images", "post_likes", "post_stats",
                 "topics", "topic_options", "votes", "SPRING_SESSION", "SPRING_SESSION_ATTRIBUTES",
                 "social_accounts", "anonymous_voters", "login_attempts", "external_unlink_jobs",
+                "topic_reviews", "topic_review_checks", "topic_status_events", "pick_assignments",
+                "opinions", "opinion_likes", "opinion_moderation_events",
                 "flyway_schema_history");
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*) FROM information_schema.STATISTICS
