@@ -69,10 +69,39 @@ Spring Boot reads standard environment variables. 모든 값에 로컬 개발용
 
 ## Local verification
 
+Java 21과 실행 중인 Docker Engine 25 이상(API 1.44)이 필요합니다. Spring Boot가 관리하는 Testcontainers 1.21.3의 Docker 29 호환을 위해 테스트 전용 `docker-java.properties`에서 API 1.44를 지정합니다. 테스트는 Testcontainers가 별도의 빈 MySQL 8 컨테이너와 임의 포트를 만들고 종료 시 정리합니다. 로컬 개발 DB를 사용하지 않습니다. 전체 Spring 컨텍스트를 띄워 Flyway V1 적용, Hibernate `validate`, 기존 회원·토픽·투표 저장, JDBC 세션 저장·principal 조회·속성 삭제를 검증합니다.
+
 ```bash
 ./gradlew test --no-daemon
 docker build -t wepick-be:local -f dockerfile .
 ```
+
+### 빈 MySQL에서 로컬 실행
+
+```bash
+docker compose up --build -d
+docker compose logs backend
+curl http://localhost:8080/actuator/health
+docker compose exec mysql mysql -uwepick -pwepick wepick_be \
+  -e 'SELECT version, description, success FROM flyway_schema_history;'
+docker compose down
+```
+
+빈 DB에서는 앱 시작 시 `V1__baseline_current_schema.sql`을 적용한 뒤 Hibernate가 스키마를 검증합니다. `version=1`, `success=1`과 health의 `UP`을 확인합니다. 재시작 시 V1을 다시 실행하지 않습니다. Compose 볼륨은 `down` 후에도 유지됩니다.
+
+다른 로컬 서비스와 포트가 겹치면 별도 Compose 프로젝트와 포트를 지정합니다. 모든 Compose 명령에 같은 프로젝트·환경 값을 사용합니다.
+
+```bash
+BE_HTTP_PORT=18081 MYSQL_PORT=13316 docker compose -p wepick-be-local up --build -d
+curl http://localhost:18081/actuator/health
+BE_HTTP_PORT=18081 MYSQL_PORT=13316 docker compose -p wepick-be-local down
+```
+
+### 스키마 기준선
+
+Flyway가 애플리케이션 테이블과 Spring Session JDBC 테이블을 함께 관리합니다. `ddl-auto=validate`, `spring.session.jdbc.initialize-schema=never`를 유지하며, 스키마 변경은 새 버전의 `src/main/resources/db/migration` SQL로 추가합니다. 적용된 V1은 수정하지 않습니다. V1은 현재 이메일·비밀번호 및 게시판 스키마를 보존하며 목표 ERD 변경은 포함하지 않습니다.
+
+기존 Hibernate 관리 DB에는 이 V1을 바로 실행하지 않습니다. `baseline-on-migrate`는 기본값 `false`이며, 이 작업은 빈 DB 경로를 검증합니다. 기존 DB 전환은 백업과 V1 대비 스키마 일치 확인 후 명시적인 Flyway baseline(version 1) 절차를 별도로 수행해야 합니다. 기존 개발 볼륨을 삭제하는 것으로 데이터 전환을 대신하지 않습니다.
 
 A MySQL-backed smoke environment must verify health, login, image upload, image delivery through Caddy, and post creation with uploaded image IDs.
 
