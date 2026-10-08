@@ -8,11 +8,11 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
   session:
     store-type: jdbc
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
     timeout: 1800
   servlet:
     multipart:
