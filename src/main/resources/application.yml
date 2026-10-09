@@ -33,6 +33,13 @@ management:
         include: health,info
 
 app:
+  auth:
+    kakao:
+      enabled: ${KAKAO_LOGIN_ENABLED:false}
+      client-id: ${KAKAO_REST_API_KEY:}
+      redirect-uri: ${KAKAO_REDIRECT_URI:}
+      cookie-secure: ${KAKAO_LOGIN_COOKIE_SECURE:true}
+      allow-insecure-loopback-cookie: ${KAKAO_ALLOW_INSECURE_LOOPBACK_COOKIE:false}
   image:
     max-file-size-bytes: ${APP_IMAGE_MAX_FILE_SIZE_BYTES:5242880}
     storage:
