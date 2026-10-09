@@ -1,6 +1,7 @@
 package gguip1.community.domain.auth.attempt;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 class LoginAttemptConsumerTest {
     @ParameterizedTest
+    @DisplayName("state가 없으면 소비를 호출하지 않고 실패한다")
     @NullAndEmptySource
     @ValueSource(strings = {" ", "\t\n"})
     void missingStateFailsWithoutConsumingAnything(String state) {
@@ -34,6 +36,7 @@ class LoginAttemptConsumerTest {
     }
 
     @ParameterizedTest
+    @DisplayName("browser binding이 없으면 소비를 호출하지 않고 실패한다")
     @NullAndEmptySource
     @ValueSource(strings = {" ", "\t\n"})
     void missingBindingFailsWithoutConsumingAnything(String binding) {
@@ -45,6 +48,7 @@ class LoginAttemptConsumerTest {
     }
 
     @Test
+    @DisplayName("저장소가 거부한 시도는 실패로 남는다")
     void rejectedAttemptRemainsAFailure() {
         LoginAttemptStore store = mock(LoginAttemptStore.class);
         when(store.consume(any(), any(), any())).thenReturn(Optional.empty());
@@ -53,6 +57,7 @@ class LoginAttemptConsumerTest {
     }
 
     @Test
+    @DisplayName("저장소 장애를 잘못된 시도로 숨기지 않는다")
     void storageFailureIsNotHiddenAsAnInvalidAttempt() {
         LoginAttemptStore store = mock(LoginAttemptStore.class);
         var failure = new DataAccessResourceFailureException("storage unavailable");
@@ -63,6 +68,7 @@ class LoginAttemptConsumerTest {
     }
 
     @Test
+    @DisplayName("원문 입력을 해시하고 한 번 읽은 UTC 마이크로초 시각으로 소비한다")
     void hashesRawInputsAndPassesOneUtcMicrosecondTimestampToStore() {
         LoginAttemptStore store = mock(LoginAttemptStore.class);
         Clock clock = mock(Clock.class);
