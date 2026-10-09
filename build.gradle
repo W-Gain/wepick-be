@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.6'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'info.solidsoft.pitest' version '1.19.0'
 }
 
 group = 'gguip1'
@@ -67,4 +68,70 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def pitestTargetClasses = providers.gradleProperty('pitestTargetClasses')
+		.map { value -> value.split(',').collect { name -> name.trim() }.findAll { name -> !name.isEmpty() } }
+		.getOrElse([])
+def pitestTargetTests = providers.gradleProperty('pitestTargetTests')
+		.map { value -> value.split(',').collect { name -> name.trim() }.findAll { name -> !name.isEmpty() } }
+		.getOrElse([])
+
+pitest {
+	junit5PluginVersion = '1.2.3'
+	pitestVersion = '1.22.1'
+	mutators = ['DEFAULTS']
+	targetClasses = pitestTargetClasses
+	targetTests = pitestTargetTests
+	failWhenNoMutations = true
+	outputFormats = ['XML', 'HTML']
+	timestampedReports = false
+}
+
+tasks.register('validatePitestSelection') {
+	dependsOn tasks.named('testClasses')
+	doLast {
+		if (pitestTargetClasses.isEmpty()) {
+			throw new GradleException('Set -PpitestTargetClasses to one or more fully qualified class names.')
+		}
+		if (pitestTargetTests.isEmpty()) {
+			throw new GradleException('Set -PpitestTargetTests to one or more fully qualified test class names.')
+		}
+
+		def validateNames = { List<String> names, FileCollection classDirs, String propertyName ->
+			def invalidNames = names.findAll { name -> name.contains('*') || name.contains('?') }
+			if (!invalidNames.isEmpty()) {
+				throw new GradleException("Use exact fully qualified class names for -P${propertyName}; wildcards are not accepted: ${invalidNames}")
+			}
+			def missingNames = names.findAll { name ->
+				def classFile = name.replace('.', File.separator) + '.class'
+				!classDirs.files.any { classDir -> new File(classDir, classFile).isFile() }
+			}
+			if (!missingNames.isEmpty()) {
+				throw new GradleException("No compiled class found for -P${propertyName}: ${missingNames}")
+			}
+		}
+
+		validateNames(pitestTargetClasses, sourceSets.main.output.classesDirs, 'pitestTargetClasses')
+		validateNames(pitestTargetTests, sourceSets.test.output.classesDirs, 'pitestTargetTests')
+	}
+}
+
+tasks.register('pitestSelectedTest', Test) {
+	description = 'Runs only the explicitly selected tests before PIT.'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform()
+	filter {
+		pitestTargetTests.each { name -> includeTestsMatching(name) }
+		failOnNoMatchingTests = true
+	}
+	dependsOn tasks.named('validatePitestSelection')
+}
+
+tasks.named('pitest') {
+	dependsOn tasks.named('validatePitestSelection')
+	dependsOn tasks.named('pitestSelectedTest')
+	mustRunAfter tasks.named('pitestSelectedTest')
 }
