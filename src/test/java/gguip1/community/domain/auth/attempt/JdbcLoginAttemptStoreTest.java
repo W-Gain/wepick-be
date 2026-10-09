@@ -1,6 +1,7 @@
 package gguip1.community.domain.auth.attempt;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,6 +54,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("유효 state는 저장 값을 돌려주고 두 번째 소비는 실패한다")
     void validAttemptReturnsStoredValuesAndCannotBeReused() {
         seed(STATE, BINDING, EXPECTED, NOW.plusMinutes(10));
         assertThat(store.consume(STATE, BINDING, NOW)).contains(EXPECTED);
@@ -62,6 +64,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("없는 state 소비는 행이나 다른 시도 상태를 바꾸지 않는다")
     void missingStateChangesNothing() {
         seed(STATE, BINDING, EXPECTED, NOW.plusMinutes(10));
         assertThat(store.consume("c".repeat(64), BINDING, NOW)).isEmpty();
@@ -70,6 +73,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("다른 browser binding은 시도를 소비하지 못하고 원래 browser는 계속 쓸 수 있다")
     void wrongBrowserCannotBurnAnotherBrowsersAttempt() {
         seed(STATE, BINDING, EXPECTED, NOW.plusMinutes(10));
         assertThat(store.consume(STATE, "c".repeat(64), NOW)).isEmpty();
@@ -78,6 +82,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("만료 1마이크로초 전에는 시도를 소비할 수 있다")
     void succeedsOneMicrosecondBeforeExpiry() {
         seed(STATE, BINDING, EXPECTED, NOW);
         LocalDateTime justBefore = NOW.minusNanos(1_000);
@@ -86,6 +91,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("만료 시각과 같은 순간에는 소비하지 않는다")
     void failsExactlyAtExpiryWithoutConsuming() {
         seed(STATE, BINDING, EXPECTED, NOW);
         assertThat(store.consume(STATE, BINDING, NOW)).isEmpty();
@@ -93,6 +99,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("만료 시각 뒤에는 시도를 소비하지 않는다")
     void failsAfterExpiryWithoutConsuming() {
         seed(STATE, BINDING, EXPECTED, NOW);
         assertThat(store.consume(STATE, BINDING, NOW.plusNanos(1_000))).isEmpty();
@@ -100,9 +107,11 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("두 탭은 역순 callback에서도 각자 한 번씩 독립 소비된다")
     void twoTabsCanConsumeInReverseOrder() {
         LoginAttempt second = new LoginAttempt("tab-two", "/history");
         String secondState = "c".repeat(64);
+        // 서로 다른 state 행을 준비한 뒤 두 번째 탭부터 소비하고 각 행의 1회 성공 시각을 확인합니다.
         seed(STATE, BINDING, EXPECTED, NOW.plusMinutes(10));
         seed(secondState, BINDING, second, NOW.plusMinutes(10));
         assertThat(store.consume(secondState, BINDING, NOW)).contains(second);
@@ -114,9 +123,11 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("소비는 뒤이은 업무 트랜잭션 rollback 이후에도 확정 상태로 남는다")
     void consumptionStaysCommittedWhenLaterWorkRollsBack() {
         seed(STATE, BINDING, EXPECTED, NOW.plusMinutes(10));
         var laterWork = new TransactionTemplate(transactionManager);
+        // REQUIRES_NEW 소비 뒤 외부 작업만 실패시켜 일회 소비가 되돌아가지 않는지 검증합니다.
         assertThatThrownBy(() -> laterWork.executeWithoutResult(status -> {
             assertThat(store.consume(STATE, BINDING, NOW)).contains(EXPECTED);
             throw new IllegalStateException("later member work failed");
@@ -126,6 +137,7 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("소비자는 UTC 마이크로초 시각을 사용하고 DB에 저장된 값만 반환한다")
     void consumerUsesUtcMicrosecondTimeAndOnlyPersistedValues() {
         seed("f8fb559306134eeeacc6a3ec137868c5d36f34a7d150340c784dae289d00aac9",
                 "0bb001e614432270361e93b579871b367eb1442846bbab4ca545af0bb63adf11",
@@ -136,7 +148,9 @@ class JdbcLoginAttemptStoreTest {
     }
 
     @Test
+    @DisplayName("8개 동시 소비를 10회 반복해 매 라운드 승자가 정확히 하나인지 확인한다")
     void eightConcurrentConsumersHaveOneWinnerInEachOfTenRounds() throws Exception {
+        // 매 라운드 state 한 건을 넣고 8개 작업을 barrier에서 동시에 출발시킨 뒤 승자·시각·최종 행을 확인합니다.
         try (var executor = Executors.newFixedThreadPool(8)) {
             for (int round = 0; round < 10; round++) {
                 jdbc.update("DELETE FROM login_attempts");
