@@ -76,6 +76,21 @@ Java 21과 실행 중인 Docker Engine 25 이상(API 1.44)이 필요합니다. S
 docker build -t wepick-be:local -f dockerfile .
 ```
 
+### PIT 변이 테스트
+
+PIT Gradle 플러그인 1.19.0, PIT 1.22.1, JUnit 5 플러그인 1.2.3을 고정해 Java 21에서 `./gradlew pitest`로 실행합니다. 대상 클래스와 JUnit 테스트 클래스는 정확한 전체 클래스 이름(FQCN)으로 지정해야 합니다. 인자가 비어 있거나 컴파일된 클래스를 찾지 못하거나 일치하는 테스트가 없으면 PIT 실행 전에 실패합니다. 와일드카드는 받지 않으며 콤마로 여러 클래스를 지정할 수 있습니다. 중첩·익명 클래스는 바깥 클래스에 자동 포함되지 않으므로, 대상으로 삼으려면 컴파일된 이름(예: `Outer$Inner`)을 직접 추가하고 셸에서 `$`가 확장되지 않도록 인자를 작은따옴표로 감쌉니다.
+
+```bash
+./gradlew pitest \
+  -PpitestTargetClasses=gguip1.community.global.health.HealthController \
+  -PpitestTargetTests=gguip1.community.global.health.HealthControllerTest \
+  --no-daemon
+```
+
+XML과 HTML 보고서는 `build/reports/pitest/mutations.xml`, `build/reports/pitest/index.html`에 생성됩니다. 이 설정은 기본 점수 임계값을 두지 않으며 지정된 클래스·테스트 범위만 분석합니다.
+
+PIT 실행 전에 전용 `pitestSelectedTest` 태스크가 지정한 테스트만 실행합니다. 일반 `./gradlew test` 태스크는 필터링하지 않으며 전체 회귀 테스트를 독립적으로 실행합니다. 위 `HealthController` 대상은 도구 동작을 확인하는 스모크 범위이며 기능별 커버리지나 품질 기준을 뜻하지 않습니다.
+
 ### 빈 MySQL에서 로컬 실행
 
 ```bash
