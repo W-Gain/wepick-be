@@ -28,7 +28,7 @@ class SchemaV4KakaoMigrationTests {
         jdbc.update("INSERT INTO users (user_id, status, email, password, nickname) "
                 + "VALUES (1, 0, 'legacy@test.invalid', 'unused', 'before-v4')");
 
-        Flyway v4 = Flyway.configure().dataSource(dataSource()).load();
+        Flyway v4 = Flyway.configure().dataSource(dataSource()).target("4").load();
         assertThatThrownBy(v4::migrate).isInstanceOf(FlywayException.class)
                 .hasRootCauseMessage("V4 requires an empty application database; no data was changed");
 
@@ -46,7 +46,7 @@ class SchemaV4KakaoMigrationTests {
         JdbcTemplate jdbc = migrateBlankDatabaseToV3();
         jdbc.update("INSERT INTO topics (target_date, title, status) VALUES (CURRENT_DATE(), 'legacy topic', 'OPEN')");
 
-        Flyway v4 = Flyway.configure().dataSource(dataSource()).load();
+        Flyway v4 = Flyway.configure().dataSource(dataSource()).target("4").load();
         assertThatThrownBy(v4::migrate).isInstanceOf(FlywayException.class)
                 .hasRootCauseMessage("V4 requires an empty application database; no data was changed");
 
@@ -59,7 +59,7 @@ class SchemaV4KakaoMigrationTests {
     @DisplayName("빈 데이터베이스만 V4를 적용하고 Kakao 회원과 익명 표 주체를 지원한다")
     void convertsEmptyDatabaseAndAllowsBothVoteSubjects() {
         JdbcTemplate jdbc = migrateBlankDatabaseToV3();
-        Flyway v4 = Flyway.configure().dataSource(dataSource()).load();
+        Flyway v4 = Flyway.configure().dataSource(dataSource()).target("4").load();
 
         assertThat(v4.migrate().migrationsExecuted).isEqualTo(1);
         v4.validate();
