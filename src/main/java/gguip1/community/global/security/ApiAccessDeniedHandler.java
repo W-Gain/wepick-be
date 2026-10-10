@@ -18,6 +18,12 @@ public final class ApiAccessDeniedHandler implements AccessDeniedHandler {
             ApiSecurityErrorWriter.write(response, 403, "CSRF_INVALID", "요청 보호 정보를 확인할 수 없습니다.");
             return;
         }
+        String path = request.getServletPath();
+        if (path == null || path.isEmpty()) path = request.getRequestURI();
+        if (path.equals("/admin/topics") || path.startsWith("/admin/topics/")) {
+            ApiSecurityErrorWriter.write(response, 403, "ADMIN_REQUIRED", "관리자 권한이 필요합니다.");
+            return;
+        }
         if ((HttpMethod.POST.matches(request.getMethod()) && "/topics".equals(request.getServletPath()))
                 || (HttpMethod.PATCH.matches(request.getMethod())
                 && request.getServletPath().matches("/topics/[^/]+"))) {

@@ -36,6 +36,7 @@ public enum ErrorCode {
     DUPLICATE_LIKE(HttpStatus.CONFLICT, "DUPLICATE_LIKE", "이미 좋아요를 눌렀습니다."),
     DUPLICATE_VOTE(HttpStatus.CONFLICT, "DUPLICATE_VOTE", "이미 해당 토픽에 투표했습니다."),
     DUPLICATE_TOPIC_DATE(HttpStatus.CONFLICT, "DUPLICATE_TOPIC_DATE", "해당 날짜에 이미 등록된 토픽이 있습니다."),
+    DUPLICATE_TOPIC(HttpStatus.CONFLICT, "DUPLICATE_TOPIC", "같은 제목의 토픽이 이미 있습니다."),
 
     // 500
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버에 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");

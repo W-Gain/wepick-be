@@ -60,6 +60,7 @@ class TopicServiceKstDateTest {
         given(fixture.userRepository.findById(7L)).willReturn(Optional.of(user));
         given(fixture.topicRepository.findById(topicId)).willReturn(Optional.of(topic));
         given(topic.getTargetDate()).willReturn(LocalDate.of(2041, 1, 1));
+        given(topic.getStatus()).willReturn(TopicStatus.OPEN);
         given(fixture.voteRepository.existsByTopicAndUser(topic, user)).willReturn(false);
         given(fixture.topicOptionRepository.findById(optionId)).willReturn(Optional.of(option));
         given(option.getOptionId()).willReturn(optionId);

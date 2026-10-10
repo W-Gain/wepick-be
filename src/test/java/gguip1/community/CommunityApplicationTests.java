@@ -5,6 +5,7 @@ import gguip1.community.domain.topic.entity.Topic;
 import gguip1.community.domain.topic.entity.TopicOption;
 import gguip1.community.domain.topic.entity.TopicStatus;
 import gguip1.community.domain.topic.entity.Vote;
+import gguip1.community.domain.topic.admin.TopicTitleNormalizer;
 import gguip1.community.domain.user.entity.User;
 import jakarta.persistence.EntityManager;
 import org.flywaydb.core.Flyway;
@@ -47,10 +48,10 @@ class CommunityApplicationTests {
     @Autowired FilterRegistrationBean<OriginGuardFilter> originGuardRegistration;
 
     @Test
-    @DisplayName("빈 MySQL에 V1부터 V4까지 한 번 적용하고 Hibernate가 스키마를 검증한다")
+    @DisplayName("빈 MySQL에 V1부터 V5까지 한 번 적용하고 Hibernate가 스키마를 검증한다")
     void emptyDatabaseMigratesOnceAndHibernateValidates() {
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
-        for (String version : new String[]{"1", "2", "3", "4"}) {
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
+        for (String version : new String[]{"1", "2", "3", "4", "5"}) {
             assertThat(jdbc.queryForObject(
                     "SELECT COUNT(*) FROM flyway_schema_history WHERE version = ? AND success = 1",
                     Integer.class, version)).isEqualTo(1);
@@ -75,6 +76,7 @@ class CommunityApplicationTests {
         User user = User.builder().nickname("baseline").build();
         entityManager.persist(user);
         Topic topic = new Topic("Existing question", "Existing description", LocalDate.now(), TopicStatus.OPEN);
+        topic.setNormalizedTitle(TopicTitleNormalizer.normalize(topic.getTitle()).normalizedTitle());
         TopicOption optionA = new TopicOption(topic, OptionLabel.A, "A", null);
         TopicOption optionB = new TopicOption(topic, OptionLabel.B, "B", null);
         topic.addOption(optionA);

@@ -23,10 +23,28 @@ public class Topic extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(name = "normalized_title", nullable = false, length = 255)
+    private String normalizedTitle;
+
+    @Column(name = "category_code", length = 30)
+    private String categoryCode;
+
+    @Column(name = "content_revision", nullable = false)
+    private Integer contentRevision = 1;
+
+    @Column(name = "scheduled_kst_date")
+    private LocalDate scheduledKstDate;
+
+    @Column(name = "published_at")
+    private java.time.LocalDateTime publishedAt;
+
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "target_date")
     private LocalDate targetDate;
 
     @Enumerated(EnumType.STRING)
@@ -41,6 +59,39 @@ public class Topic extends BaseEntity {
         this.description = description;
         this.targetDate = targetDate;
         this.status = status;
+    }
+
+    /** Legacy topic 저장 시에도 V5 제목 UNIQUE 키를 함께 채웁니다. */
+    public void setNormalizedTitle(String normalizedTitle) {
+        this.normalizedTitle = normalizedTitle;
+    }
+
+    public void setTitleAndNormalizedTitle(String title, String normalizedTitle) {
+        this.title = title;
+        this.normalizedTitle = normalizedTitle;
+    }
+
+    /** DRAFT 생성 입력을 기존 OPEN/CLOSED 생성 경로와 구분해 초기화합니다. */
+    public void initializeDraft(String normalizedTitle, String categoryCode, Long createdByUserId) {
+        this.normalizedTitle = normalizedTitle;
+        this.categoryCode = categoryCode;
+        this.contentRevision = 1;
+        this.scheduledKstDate = null;
+        this.publishedAt = null;
+        this.createdByUserId = createdByUserId;
+        this.targetDate = null;
+        this.status = TopicStatus.DRAFT;
+    }
+
+    /** 수정은 서비스가 잠근 행의 revision을 확인한 뒤 기존 A/B 행만 갱신합니다. */
+    public void updateDraft(String title, String normalizedTitle, String categoryCode,
+                            LocalDate scheduledKstDate, TopicStatus status, int revision) {
+        this.title = title;
+        this.normalizedTitle = normalizedTitle;
+        this.categoryCode = categoryCode;
+        this.scheduledKstDate = scheduledKstDate;
+        this.status = status;
+        this.contentRevision = revision;
     }
 
     public void addOption(TopicOption option) {

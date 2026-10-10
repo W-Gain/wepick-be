@@ -6,9 +6,12 @@ import gguip1.community.domain.topic.dto.request.VoteRequest;
 import gguip1.community.domain.topic.dto.response.TopicListResponse;
 import gguip1.community.domain.topic.dto.response.TopicOptionResponse;
 import gguip1.community.domain.topic.dto.response.TopicResponse;
+import gguip1.community.domain.topic.admin.TopicDuplicateKey;
+import gguip1.community.domain.topic.admin.TopicTitleNormalizer;
 import gguip1.community.domain.topic.entity.OptionLabel;
 import gguip1.community.domain.topic.entity.Topic;
 import gguip1.community.domain.topic.entity.TopicOption;
+import gguip1.community.domain.topic.entity.TopicStatus;
 import gguip1.community.domain.topic.entity.Vote;
 import gguip1.community.domain.topic.repository.TopicOptionRepository;
 import gguip1.community.domain.topic.repository.TopicRepository;
@@ -23,12 +26,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -82,6 +87,10 @@ public class TopicService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new ErrorException(ErrorCode.TOPIC_NOT_FOUND));
 
+        if (topic.getStatus() != TopicStatus.OPEN && topic.getStatus() != TopicStatus.CLOSED) {
+            throw new ErrorException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+
         if (!topic.getTargetDate().isEqual(currentKstDate())) {
             throw new ErrorException(ErrorCode.TOPIC_NOT_FOUND); // 혹은 적절한 에러 코드 (예: 투표 기간 아님)
         }
@@ -105,16 +114,30 @@ public class TopicService {
 
     @Transactional
     public Long createTopic(CreateTopicRequest request) {
+        if (request.getStatus() != TopicStatus.OPEN && request.getStatus() != TopicStatus.CLOSED) {
+            throw new ErrorException(ErrorCode.VALIDATION_FAILED);
+        }
         if (topicRepository.existsByTargetDate(request.getTargetDate())) {
             throw new ErrorException(ErrorCode.DUPLICATE_TOPIC_DATE);
         }
 
+        TopicTitleNormalizer.Result title;
+        try {
+            title = TopicTitleNormalizer.normalize(request.getTitle());
+        } catch (TopicTitleNormalizer.InvalidTitleException invalid) {
+            throw new ErrorException(ErrorCode.VALIDATION_FAILED);
+        }
+        if (topicRepository.existsByNormalizedTitle(title.normalizedTitle())) {
+            throw new ErrorException(ErrorCode.DUPLICATE_TOPIC);
+        }
+
         Topic topic = new Topic(
-            request.getTitle(),
+            title.displayTitle(),
             request.getDescription(),
             request.getTargetDate(),
             request.getStatus()
         );
+        topic.setNormalizedTitle(title.normalizedTitle());
 
         TopicOption optionA = new TopicOption(topic, OptionLabel.A, request.getOptionAText(), request.getOptionADescription());
         TopicOption optionB = new TopicOption(topic, OptionLabel.B, request.getOptionBText(), request.getOptionBDescription());
@@ -122,7 +145,14 @@ public class TopicService {
         topic.addOption(optionA);
         topic.addOption(optionB);
 
-        topicRepository.save(topic);
+        try {
+            topicRepository.saveAndFlush(topic);
+        } catch (DataIntegrityViolationException failure) {
+            if (TopicDuplicateKey.isNormalizedTitleDuplicate(failure)) {
+                throw new ErrorException(ErrorCode.DUPLICATE_TOPIC);
+            }
+            throw failure;
+        }
         return topic.getTopicId();
     }
 
@@ -131,13 +161,36 @@ public class TopicService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new ErrorException(ErrorCode.TOPIC_NOT_FOUND));
 
+        if (topic.getStatus() != TopicStatus.OPEN && topic.getStatus() != TopicStatus.CLOSED) {
+            throw new ErrorException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+        if (request.getStatus() != null && request.getStatus() != TopicStatus.OPEN
+                && request.getStatus() != TopicStatus.CLOSED) {
+            throw new ErrorException(ErrorCode.VALIDATION_FAILED);
+        }
+
         if (request.getTargetDate() != null && !request.getTargetDate().equals(topic.getTargetDate())) {
             if (topicRepository.existsByTargetDate(request.getTargetDate())) {
                 throw new ErrorException(ErrorCode.DUPLICATE_TOPIC_DATE);
             }
         }
 
+        String nextNormalizedTitle = null;
+        String nextDisplayTitle = null;
+        if (request.getTitle() != null) {
+            try {
+                var normalized = TopicTitleNormalizer.normalize(request.getTitle());
+                nextNormalizedTitle = normalized.normalizedTitle();
+                nextDisplayTitle = normalized.displayTitle();
+            } catch (TopicTitleNormalizer.InvalidTitleException invalid) {
+                throw new ErrorException(ErrorCode.VALIDATION_FAILED);
+            }
+            if (topicRepository.existsByNormalizedTitleAndTopicIdNot(nextNormalizedTitle, topicId)) {
+                throw new ErrorException(ErrorCode.DUPLICATE_TOPIC);
+            }
+        }
         topic.update(request.getTitle(), request.getDescription(), request.getTargetDate(), request.getStatus());
+        if (nextNormalizedTitle != null) topic.setTitleAndNormalizedTitle(nextDisplayTitle, nextNormalizedTitle);
 
         if (request.getOptionAText() != null || request.getOptionBText() != null || request.getOptionADescription() != null || request.getOptionBDescription() != null) {
             for (TopicOption option : topic.getOptions()) {
@@ -150,10 +203,18 @@ public class TopicService {
                 }
             }
         }
+        try {
+            topicRepository.flush();
+        } catch (DataIntegrityViolationException failure) {
+            if (TopicDuplicateKey.isNormalizedTitleDuplicate(failure)) {
+                throw new ErrorException(ErrorCode.DUPLICATE_TOPIC);
+            }
+            throw failure;
+        }
     }
 
     public Page<TopicListResponse> getTopicArchive(Pageable pageable) {
-        return topicRepository.findAll(pageable)
+        return topicRepository.findAllByStatusIn(List.of(TopicStatus.OPEN, TopicStatus.CLOSED), pageable)
                 .map(TopicListResponse::new);
     }
 

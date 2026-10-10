@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gguip1.community.domain.auth.identity.AnonymousVoterCookie;
 import gguip1.community.domain.auth.identity.KakaoIdentity;
 import gguip1.community.domain.auth.identity.KakaoIdentityClient;
+import gguip1.community.domain.topic.admin.TopicTitleNormalizer;
 import gguip1.community.global.security.AuthenticatedMember;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -666,9 +667,11 @@ class KakaoLoginCallbackHttpIntegrationTests {
         var keys = new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbc.update(connection -> {
             var statement = connection.prepareStatement(
-                    "INSERT INTO topics (target_date, title, status) VALUES (?, ?, 'OPEN')", Statement.RETURN_GENERATED_KEYS);
+                    "INSERT INTO topics (target_date, title, normalized_title, status) VALUES (?, ?, ?, 'OPEN')",
+                    Statement.RETURN_GENERATED_KEYS);
             statement.setObject(1, LocalDate.now(ZoneOffset.UTC));
             statement.setString(2, title);
+            statement.setString(3, TopicTitleNormalizer.normalize(title).normalizedTitle());
             return statement;
         }, keys);
         return keys.getKey().longValue();

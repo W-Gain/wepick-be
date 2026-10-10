@@ -95,6 +95,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/users/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/topics").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/topics/*").hasRole("ADMIN")
+                        .requestMatchers("/admin/topics", "/admin/topics/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/images/profile", "/images/posts", "/posts",
                                 "/posts/*/like", "/posts/*/comments", "/topics/*/vote").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/posts/*", "/posts/*/comments/*", "/topics/*").authenticated()
