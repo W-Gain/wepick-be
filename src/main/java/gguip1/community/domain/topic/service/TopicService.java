@@ -24,7 +24,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,15 +36,19 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class TopicService {
 
+    private static final ZoneId KOREA_ZONE = ZoneId.of("Asia/Seoul");
+
     private final TopicRepository topicRepository;
     private final TopicOptionRepository topicOptionRepository;
     private final VoteRepository voteRepository;
     private final UserRepository userRepository;
+    private final Clock clock;
 
     public TopicResponse getTodayTopic(Long userId) {
-        log.info(String.valueOf(LocalDate.now()));
+        LocalDate today = currentKstDate();
+        log.info(String.valueOf(today));
 
-        Topic topic = topicRepository.findByTargetDateWithOptions(LocalDate.now())
+        Topic topic = topicRepository.findByTargetDateWithOptions(today)
                 .orElseThrow(() -> new ErrorException(ErrorCode.TOPIC_NOT_FOUND));
 
         Long totalVotes = topic.getOptions().stream()
@@ -76,7 +82,7 @@ public class TopicService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new ErrorException(ErrorCode.TOPIC_NOT_FOUND));
 
-        if (!topic.getTargetDate().isEqual(LocalDate.now())) {
+        if (!topic.getTargetDate().isEqual(currentKstDate())) {
             throw new ErrorException(ErrorCode.TOPIC_NOT_FOUND); // 혹은 적절한 에러 코드 (예: 투표 기간 아님)
         }
 
@@ -149,5 +155,10 @@ public class TopicService {
     public Page<TopicListResponse> getTopicArchive(Pageable pageable) {
         return topicRepository.findAll(pageable)
                 .map(TopicListResponse::new);
+    }
+
+    private LocalDate currentKstDate() {
+        // 인증과 공유하는 UTC Clock의 instant를 서비스 날짜 기준인 KST로 해석합니다.
+        return LocalDate.now(clock.withZone(KOREA_ZONE));
     }
 }
