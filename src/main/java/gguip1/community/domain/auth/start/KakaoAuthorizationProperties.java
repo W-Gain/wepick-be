@@ -13,6 +13,7 @@ import java.util.Locale;
 public class KakaoAuthorizationProperties implements org.springframework.beans.factory.InitializingBean {
     private boolean enabled;
     private String clientId;
+    private String clientSecret;
     private String redirectUri;
     private boolean cookieSecure = true;
     private boolean allowInsecureLoopbackCookie;
@@ -32,6 +33,14 @@ public class KakaoAuthorizationProperties implements org.springframework.beans.f
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 
     public String getRedirectUri() {
@@ -62,11 +71,18 @@ public class KakaoAuthorizationProperties implements org.springframework.beans.f
         return cookieSecure ? "__Host-wepick-login-binding" : "wepick-login-binding-local";
     }
 
-    URI validatedRedirectUri() {
+    public URI validatedRedirectUri() {
         if (!enabled || validatedRedirectUri == null) {
             throw new IllegalStateException("Kakao authorization is disabled or incomplete");
         }
         return validatedRedirectUri;
+    }
+
+    public String validatedClientSecret() {
+        if (clientSecret == null || clientSecret.isBlank() || !clientSecret.equals(clientSecret.trim())) {
+            throw new IllegalStateException("app.auth.kakao.client-secret is required for identity lookup");
+        }
+        return clientSecret;
     }
 
     @Override

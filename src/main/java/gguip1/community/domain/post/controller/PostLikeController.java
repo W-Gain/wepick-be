@@ -2,7 +2,7 @@ package gguip1.community.domain.post.controller;
 
 import gguip1.community.domain.post.service.PostLikeService;
 import gguip1.community.global.auth.annotation.Auth;
-import gguip1.community.global.context.SecurityContext;
+import gguip1.community.global.security.CurrentActor;
 import gguip1.community.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,14 +19,14 @@ public class PostLikeController {
     @Auth
     @PostMapping("/posts/{postId}/like")
     public ResponseEntity<ApiResponse<Void>> likePost(@PathVariable Long postId) {
-        postLikeService.createLike(SecurityContext.getCurrentUserId(), postId);
+        postLikeService.createLike(CurrentActor.userIdOrNull(), postId);
         return ResponseEntity.noContent().build();
     }
 
     @Auth
     @DeleteMapping("/posts/{postId}/like")
     public ResponseEntity<ApiResponse<Void>> unlikePost(@PathVariable Long postId) {
-        postLikeService.deleteLike(SecurityContext.getCurrentUserId(), postId);
+        postLikeService.deleteLike(CurrentActor.userIdOrNull(), postId);
         return ResponseEntity.noContent().build();
     }
 }

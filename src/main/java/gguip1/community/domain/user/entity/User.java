@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "users")
@@ -22,21 +23,32 @@ public class User extends SoftDeleteEntity {
     @JoinColumn(name = "profile_image_id")
     private Image profileImage;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
-
-    @Column(name = "password", nullable = false)
-    private String password;
-
-    @Column(name = "nickname", nullable = false, unique = true)
+    @Column(name = "nickname", length = 30, unique = true)
     private String nickname;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 5)
+    private UserRole role = UserRole.USER;
+
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
     @Builder
-    public User(Image profileImage, String email, String password, String nickname, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public User(Image profileImage, String nickname, UserRole role, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.profileImage = profileImage;
-        this.email = email;
-        this.password = password;
         this.nickname = nickname;
+        this.role = Objects.requireNonNullElse(role, UserRole.USER);
+    }
+
+    public static User kakaoMember(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("Active member nickname is required");
+        }
+        return User.builder().nickname(nickname).role(UserRole.USER).build();
+    }
+
+    public boolean isActive() {
+        return status != null && status == 0;
     }
 
     public void updateProfile(Image profileImage, String nickname){
@@ -56,16 +68,12 @@ public class User extends SoftDeleteEntity {
         }
     }
 
-    public void updatePassword(String password){
-        this.password = password;
-    }
-
     @Override
     public void softDelete(){
         this.status = 1;
         this.deletedAt = LocalDateTime.now();
-        this.email += "_deleted";
-
-//        this.nickname += "_deleted";
+        this.withdrawnAt = this.deletedAt;
+        this.nickname = null;
+        this.profileImage = null;
     }
 }
