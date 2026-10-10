@@ -46,9 +46,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
     /**
-     * 비밀번호 암호화를 위한 Spring Security Crypto 모듈
+     * OAuth2 코드 교환과 Kakao identity 조회에 쓰는 Spring Security 구성 요소
      */
-    implementation 'org.springframework.security:spring-security-crypto:6.4.5'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-client'
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
 
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'

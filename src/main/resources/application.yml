@@ -1,4 +1,6 @@
 spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   application:
     name: wepick-be
   datasource:
@@ -13,6 +15,7 @@ spring:
     store-type: jdbc
     jdbc:
       initialize-schema: never
+      flush-mode: immediate
     timeout: 1800
   servlet:
     multipart:
@@ -23,6 +26,7 @@ server:
   servlet:
     session:
       cookie:
+        name: JSESSIONID
         secure: ${SESSION_COOKIE_SECURE:false}
         same-site: ${SESSION_COOKIE_SAME_SITE:lax}
 
@@ -33,10 +37,15 @@ management:
         include: health,info
 
 app:
+  security:
+    allowed-origin: ${APP_SECURITY_ALLOWED_ORIGIN:http://127.0.0.1:5173}
   auth:
+    anonymous-voter:
+      secure: ${ANONYMOUS_VOTER_COOKIE_SECURE:true}
     kakao:
       enabled: ${KAKAO_LOGIN_ENABLED:false}
       client-id: ${KAKAO_REST_API_KEY:}
+      client-secret: ${KAKAO_CLIENT_SECRET:}
       redirect-uri: ${KAKAO_REDIRECT_URI:}
       cookie-secure: ${KAKAO_LOGIN_COOKIE_SECURE:true}
       allow-insecure-loopback-cookie: ${KAKAO_ALLOW_INSECURE_LOOPBACK_COOKIE:false}

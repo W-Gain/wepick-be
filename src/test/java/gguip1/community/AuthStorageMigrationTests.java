@@ -56,7 +56,7 @@ class AuthStorageMigrationTests {
         assertThat(v2.migrate().migrationsExecuted).isEqualTo(1);
         v2.validate();
         assertThat(v2.info().current().getVersion().getVersion()).isEqualTo("2");
-        Flyway latest = Flyway.configure().dataSource(dataSource).load();
+        Flyway latest = Flyway.configure().dataSource(dataSource).target("3").load();
         assertThat(latest.migrate().migrationsExecuted).isEqualTo(1);
         latest.validate();
         assertThat(latest.info().current().getVersion().getVersion()).isEqualTo("3");

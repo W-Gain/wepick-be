@@ -26,6 +26,23 @@ class KakaoAuthorizationPropertiesTest {
     }
 
     @Test
+    @DisplayName("client secret은 시작 설정을 켜는 데 필요하지 않고 외부 identity 조회 시에만 검사한다")
+    void clientSecretIsNotRequiredUntilIdentityLookup() {
+        contextRunner
+                .withPropertyValues(
+                        "app.auth.kakao.enabled=true",
+                        "app.auth.kakao.client-id=fake-client-id",
+                        "app.auth.kakao.redirect-uri=https://wepick.example/auth/kakao/callback")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    KakaoAuthorizationProperties properties = context.getBean(KakaoAuthorizationProperties.class);
+                    assertThat(properties.getClientSecret()).isNull();
+                    assertThatThrownBy(properties::validatedClientSecret)
+                            .hasMessage("app.auth.kakao.client-secret is required for identity lookup");
+                });
+    }
+
+    @Test
     @DisplayName("Kakao 시작을 켰지만 client ID가 없으면 값 없이 fail-fast한다")
     void enabledAuthorizationRequiresClientIdWithoutLoggingValues() {
         contextRunner

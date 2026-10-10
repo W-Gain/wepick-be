@@ -1,54 +1,49 @@
 package gguip1.community.domain.auth.controller;
 
-import gguip1.community.domain.auth.dto.AuthRequest;
-import gguip1.community.domain.auth.dto.AuthResponse;
-import gguip1.community.domain.auth.service.AuthService;
-import gguip1.community.global.context.SecurityContext;
-import gguip1.community.global.response.ApiResponse;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+
+/** WePick 세션만 종료하고 익명 표 식별은 유지합니다. */
 @RestController
-@RequiredArgsConstructor
 public class AuthController {
-    private final AuthService authService;
+    private final CsrfTokenRepository csrfTokens;
+    private final String sessionCookieName;
+    private final boolean secureCookie;
 
-    @PostMapping("/auth")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody AuthRequest authRequest,
-                                                           HttpServletRequest httpRequest) {
-        AuthResponse authResponse = authService.login(authRequest, httpRequest);
-
-        HttpSession session = httpRequest.getSession(true);
-
-        session.setAttribute("userId", authResponse.userId());
-
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.success("login_success", authResponse)
-        );
+    public AuthController(
+            CsrfTokenRepository csrfTokens,
+            @Value("${server.servlet.session.cookie.name:JSESSIONID}") String sessionCookieName,
+            @Value("${server.servlet.session.cookie.secure:false}") boolean secureCookie) {
+        this.csrfTokens = csrfTokens;
+        this.sessionCookieName = sessionCookieName;
+        this.secureCookie = secureCookie;
     }
 
-    @DeleteMapping("/auth")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request,
-                                                    HttpServletResponse response) {
-//        SecurityContext.clear();
-
-        Cookie cookie = new Cookie("JSESSIONID", null);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        cookie.setHttpOnly(true);
-        response.addCookie(cookie);
-
+    @PostMapping("/auth/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        csrfTokens.saveToken(null, request, response);
+        SecurityContextHolder.clearContext();
         HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-
-        return ResponseEntity.noContent().build();
+        if (session != null) session.invalidate();
+        ResponseCookie expired = ResponseCookie.from(sessionCookieName, "")
+                .path("/")
+                .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite("Lax")
+                .maxAge(Duration.ZERO)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, expired.toString());
+        return ResponseEntity.noContent().header(HttpHeaders.CACHE_CONTROL, "private, no-store").build();
     }
 }

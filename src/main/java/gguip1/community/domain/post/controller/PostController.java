@@ -7,7 +7,7 @@ import gguip1.community.domain.post.dto.response.PostPageItemResponse;
 import gguip1.community.domain.post.dto.response.PostPageResponse;
 import gguip1.community.domain.post.service.PostService;
 import gguip1.community.global.auth.annotation.Auth;
-import gguip1.community.global.context.SecurityContext;
+import gguip1.community.global.security.CurrentActor;
 import gguip1.community.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class PostController {
     @Auth
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<PostPageItemResponse>> createPost(@Valid @RequestBody PostCreateRequest postCreateRequest) {
-        PostPageItemResponse response = postService.createPost(SecurityContext.getCurrentUserId(), postCreateRequest);
+        PostPageItemResponse response = postService.createPost(CurrentActor.userIdOrNull(), postCreateRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success("Post created", response)
         );
@@ -44,21 +44,21 @@ public class PostController {
     @GetMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<PostDetailResponse>> getPost(@PathVariable Long postId) {
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.success("Posts retrieved successfully", postService.getPostDetail(SecurityContext.getCurrentUserId(), postId))
+                ApiResponse.success("Posts retrieved successfully", postService.getPostDetail(CurrentActor.userIdOrNull(), postId))
         );
     }
 
     @Auth
     @PatchMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<Void>> updatePost(@PathVariable Long postId, @RequestBody PostUpdateRequest postUpdateRequest) {
-        postService.updatePost(SecurityContext.getCurrentUserId(), postId, postUpdateRequest);
+        postService.updatePost(CurrentActor.userIdOrNull(), postId, postUpdateRequest);
         return ResponseEntity.ok(ApiResponse.success("Post updated", null));
     }
 
     @Auth
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable Long postId) {
-        postService.deletePost(SecurityContext.getCurrentUserId(), postId);
+        postService.deletePost(CurrentActor.userIdOrNull(), postId);
         return ResponseEntity.noContent().build();
     }
 }
